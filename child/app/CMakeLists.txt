@@ -3,7 +3,7 @@ set(CHILD_APP_HEADERS
 )
 
 set(CHILD_APP_SOURCES
-    # src/main.cpp
+    src/main.cpp
     # src/childwindow.cpp
 )
 

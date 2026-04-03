@@ -3,7 +3,7 @@ set(PARENT_APP_HEADERS
 )
 
 set(PARENT_APP_SOURCES
-    # src/main.cpp
+    src/main.cpp
     # src/mainwindow.cpp
 )
 
