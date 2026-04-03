@@ -66,3 +66,16 @@ x86/
 # ----------------------------
 *.log
 *.tmp
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+*.creator
+*.creator.user
+*.creator.user.*
+*.files
+*.includes
+*.autosave
+*.qbs.user
+*.user
+*.user.*
