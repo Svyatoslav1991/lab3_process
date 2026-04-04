@@ -1,14 +1,14 @@
 set(CHILD_APP_HEADERS
-    # include/childwindow.h
+    include/mainwindow.h
 )
 
 set(CHILD_APP_SOURCES
     src/main.cpp
-    # src/childwindow.cpp
+    src/mainwindow.cpp
 )
 
 set(CHILD_APP_FORMS
-    # src/childwindow.ui
+    src/mainwindow.ui
 )
 
 add_executable(${CHILD_APP_TARGET})
