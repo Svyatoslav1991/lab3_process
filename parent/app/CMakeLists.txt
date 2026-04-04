@@ -1,14 +1,14 @@
 set(PARENT_APP_HEADERS
-    # include/mainwindow.h
+    include/mainwindow.h
 )
 
 set(PARENT_APP_SOURCES
     src/main.cpp
-    # src/mainwindow.cpp
+    src/mainwindow.cpp
 )
 
 set(PARENT_APP_FORMS
-    # src/mainwindow.ui
+    src/mainwindow.ui
 )
 
 add_executable(${PARENT_APP_TARGET})
