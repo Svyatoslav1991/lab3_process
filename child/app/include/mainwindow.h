@@ -1,22 +1,29 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 
+QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
 }
+QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
+class MainWindow final : public QMainWindow
 {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
+
+private slots:
+    void on_sendData_button_clicked();
+    void on_dataReception_button_clicked();
 
 private:
-    Ui::MainWindow *ui;
-};
+    void initializeUi();
+    static QString normalizeLine(QString text);
 
-#endif // MAINWINDOW_H
+private:
+    Ui::MainWindow *ui = nullptr;
+};

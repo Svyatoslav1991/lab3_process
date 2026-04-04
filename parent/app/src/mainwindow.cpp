@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QStatusBar>
 
@@ -26,6 +29,7 @@ void MainWindow::initializeUi()
 
     ui->exitCode_lineEdit->setReadOnly(true);
     ui->exitStatus_lineEdit->setReadOnly(true);
+    ui->dataReception_lineEdit->setReadOnly(true);
 
     clearExitInfo();
 
@@ -42,6 +46,9 @@ void MainWindow::connectProcessSignals()
 
     connect(process_, &QProcess::errorOccurred,
             this, &MainWindow::onChildError);
+
+    connect(process_, &QProcess::readyReadStandardOutput,
+            this, &MainWindow::onChildStandardOutputReady);
 }
 
 QString MainWindow::programText() const
@@ -57,25 +64,35 @@ QStringList MainWindow::programArguments() const
         return {};
     }
 
-    // Пока простой вариант: делим по пробелам.
-    // Поддержку кавычек и сложных аргументов можно добавить следующим этапом.
     return rawArguments.split(' ', Qt::SkipEmptyParts);
 }
 
-bool MainWindow::validateProgram() const
+bool MainWindow::validateProgram()
 {
     if (!programText().isEmpty()) {
         return true;
     }
 
     QMessageBox::warning(
-        const_cast<MainWindow*>(this),
+        this,
         QStringLiteral("Ошибка"),
         QStringLiteral("Укажите имя или путь к исполняемому файлу.")
     );
 
     ui->name_lineEdit->setFocus();
     return false;
+}
+
+QString MainWindow::resolvedProgramPath() const
+{
+    const QString program = programText();
+    const QFileInfo info(program);
+
+    if (info.isAbsolute()) {
+        return info.absoluteFilePath();
+    }
+
+    return QDir(QCoreApplication::applicationDirPath()).filePath(program);
 }
 
 void MainWindow::clearExitInfo()
@@ -94,6 +111,15 @@ void MainWindow::setProcessControlsRunning(const bool running)
 {
     ui->start_button->setEnabled(!running);
     ui->kill_button->setEnabled(running);
+}
+
+QString MainWindow::normalizeLine(QString text)
+{
+    while (!text.isEmpty() && (text.endsWith('\n') || text.endsWith('\r'))) {
+        text.chop(1);
+    }
+
+    return text;
 }
 
 QString MainWindow::exitStatusToString(const QProcess::ExitStatus exitStatus)
@@ -135,7 +161,7 @@ void MainWindow::launchDetached(const QStringList& arguments)
     }
 
     qint64 pid = 0;
-    const bool started = QProcess::startDetached(programText(), arguments, QString(), &pid);
+    const bool started = QProcess::startDetached(resolvedProgramPath(), arguments, QString(), &pid);
 
     if (!started) {
         QMessageBox::warning(
@@ -158,7 +184,7 @@ void MainWindow::executeProgram(const QStringList& arguments)
         return;
     }
 
-    const int result = QProcess::execute(programText(), arguments);
+    const int result = QProcess::execute(resolvedProgramPath(), arguments);
 
     statusBar()->showMessage(
         QStringLiteral("execute завершён, код возврата: %1").arg(result),
@@ -178,10 +204,45 @@ void MainWindow::startInteractiveProcess()
     }
 
     clearExitInfo();
+    ui->dataReception_lineEdit->clear();
+    childStdoutBuffer_.clear();
 
-    process_->start(programText(), programArguments());
+    process_->setWorkingDirectory(QCoreApplication::applicationDirPath());
+    process_->setProcessChannelMode(QProcess::SeparateChannels);
+    process_->start(resolvedProgramPath(), programArguments());
 
-    statusBar()->showMessage(QStringLiteral("Запуск дочернего процесса..."), 3000);
+    statusBar()->showMessage(
+        QStringLiteral("Запуск дочернего процесса: %1").arg(resolvedProgramPath()),
+        4000
+    );
+}
+
+void MainWindow::handleStdoutChunk(const QByteArray& chunk)
+{
+    childStdoutBuffer_.append(chunk);
+
+    while (true) {
+        const int lineEndIndex = childStdoutBuffer_.indexOf('\n');
+
+        if (lineEndIndex < 0) {
+            break;
+        }
+
+        const QByteArray rawLine = childStdoutBuffer_.left(lineEndIndex);
+        childStdoutBuffer_.remove(0, lineEndIndex + 1);
+
+        displayReceivedFromChild(normalizeLine(QString::fromUtf8(rawLine)));
+    }
+}
+
+void MainWindow::displayReceivedFromChild(const QString& text)
+{
+    ui->dataReception_lineEdit->setText(text);
+
+    statusBar()->showMessage(
+        QStringLiteral("Получены данные от дочернего процесса"),
+        3000
+    );
 }
 
 void MainWindow::on_startDetached_button_clicked()
@@ -220,9 +281,51 @@ void MainWindow::on_kill_button_clicked()
     statusBar()->showMessage(QStringLiteral("Отправлен kill дочернему процессу"), 3000);
 }
 
+void MainWindow::on_sendingData_button_clicked()
+{
+    if (process_->state() != QProcess::Running) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Ошибка"),
+            QStringLiteral("Сначала запустите дочерний процесс.")
+        );
+        return;
+    }
+
+    QByteArray payload = ui->sendingData_lineEdit->text().toUtf8();
+    payload.append('\n');
+
+    const qint64 written = process_->write(payload);
+
+    if (written == -1) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Ошибка записи"),
+            QStringLiteral("Не удалось отправить данные дочернему процессу.\n%1")
+                .arg(process_->errorString())
+        );
+        return;
+    }
+
+    if (!process_->waitForBytesWritten(1000)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Ошибка записи"),
+            QStringLiteral("Данные не были записаны в дочерний процесс за ожидаемое время.")
+        );
+        return;
+    }
+
+    statusBar()->showMessage(
+        QStringLiteral("Отправлено дочернему процессу %1 байт").arg(written),
+        3000
+    );
+}
+
 void MainWindow::onChildStarted()
 {
     setProcessControlsRunning(true);
+
     statusBar()->showMessage(QStringLiteral("Дочерний процесс успешно запущен"), 3000);
 }
 
@@ -250,4 +353,9 @@ void MainWindow::onChildError(const QProcess::ProcessError error)
             .arg(processErrorToString(error))
             .arg(process_->errorString())
     );
+}
+
+void MainWindow::onChildStandardOutputReady()
+{
+    handleStdoutChunk(process_->readAllStandardOutput());
 }
