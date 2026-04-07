@@ -8,6 +8,15 @@
 #include <QMessageBox>
 #include <QStatusBar>
 
+/**
+ * @file mainwindow.cpp
+ * @brief Реализация главного окна родительского процесса.
+ *
+ * @details
+ * Файл содержит реализацию логики запуска дочерних процессов, обмена данными
+ * через QProcess и работы с разделяемой памятью через SharedMemoryChannel.
+ */
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -201,6 +210,13 @@ void MainWindow::executeProgram(const QStringList& arguments)
     );
 }
 
+/**
+ * @brief Запускает дочерний процесс в управляемом режиме.
+ *
+ * @details
+ * Перед запуском очищает остаточные данные предыдущего сеанса, задаёт
+ * рабочий каталог и включает раздельные каналы stdout/stderr.
+ */
 void MainWindow::startInteractiveProcess()
 {
     if (!validateProgram()) {
@@ -226,6 +242,14 @@ void MainWindow::startInteractiveProcess()
     );
 }
 
+/**
+ * @brief Выполняет построчную обработку stdout дочернего процесса.
+ *
+ * @details
+ * Метод накапливает данные во внутреннем буфере до обнаружения символа '\n'.
+ * Это позволяет корректно обрабатывать случаи, когда одна строка приходит
+ * из stdout несколькими фрагментами.
+ */
 void MainWindow::handleStdoutChunk(const QByteArray& chunk)
 {
     childStdoutBuffer_.append(chunk);
@@ -290,6 +314,13 @@ void MainWindow::on_kill_button_clicked()
     statusBar()->showMessage(QStringLiteral("Отправлен kill дочернему процессу"), 3000);
 }
 
+/**
+ * @brief Отправляет пользовательскую строку в stdin дочернего процесса.
+ *
+ * @details
+ * Строка кодируется в UTF-8 и завершается символом перевода строки, чтобы
+ * дочерний процесс мог считать её как завершённое текстовое сообщение.
+ */
 void MainWindow::on_sendingData_button_clicked()
 {
     if (process_->state() != QProcess::Running) {
@@ -386,6 +417,13 @@ void MainWindow::setSharedMemoryControlsReady(const bool ready)
     ui->memoryShutdown_button->setEnabled(ready);
 }
 
+/**
+ * @brief Создаёт или подключает сегмент разделяемой памяти.
+ *
+ * @details
+ * После успешной операции активирует элементы интерфейса, связанные
+ * с записью, чтением и отключением shared memory.
+ */
 void MainWindow::on_creationMemory_button_clicked()
 {
     QString errorMessage;
