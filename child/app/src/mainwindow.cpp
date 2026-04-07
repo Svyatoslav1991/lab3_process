@@ -9,6 +9,16 @@
 
 #include "sharedmemorychannel.h"
 
+/**
+ * @file mainwindow.cpp
+ * @brief Реализация главного окна дочернего процесса.
+ *
+ * @details
+ * Файл содержит реализацию пользовательского интерфейса дочернего приложения,
+ * которое взаимодействует с родительским процессом через стандартные потоки
+ * ввода-вывода и через сегмент разделяемой памяти.
+ */
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -24,6 +34,9 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/**
+ * @brief Настраивает начальное состояние окна.
+ */
 void MainWindow::initializeUi()
 {
     setWindowTitle(QStringLiteral("Child"));
@@ -36,6 +49,9 @@ void MainWindow::initializeUi()
     initializeSharedMemoryUi();
 }
 
+/**
+ * @brief Удаляет символы перевода строки в конце строки.
+ */
 QString MainWindow::normalizeLine(QString text)
 {
     while (!text.isEmpty() && (text.endsWith('\n') || text.endsWith('\r'))) {
@@ -45,6 +61,13 @@ QString MainWindow::normalizeLine(QString text)
     return text;
 }
 
+/**
+ * @brief Отправляет строку родительскому процессу через stdout.
+ *
+ * @details
+ * Запись выполняется через std::cout с последующим flush(),
+ * чтобы данные были немедленно переданы во внешний процесс.
+ */
 void MainWindow::on_sendData_button_clicked()
 {
     QByteArray payload = ui->sendingData_lineEdit->text().toUtf8();
@@ -65,6 +88,13 @@ void MainWindow::on_sendData_button_clicked()
     statusBar()->showMessage(QStringLiteral("Данные отправлены родителю"), 3000);
 }
 
+/**
+ * @brief Считывает строку от родительского процесса из stdin.
+ *
+ * @details
+ * Используется буфер фиксированного размера и функция std::fgets().
+ * Полученные данные преобразуются из UTF-8 и отображаются в lineEdit.
+ */
 void MainWindow::on_dataReception_button_clicked()
 {
     char buffer[4096] = {};
@@ -85,12 +115,18 @@ void MainWindow::on_dataReception_button_clicked()
     statusBar()->showMessage(QStringLiteral("Строка от родителя получена"), 3000);
 }
 
+/**
+ * @brief Настраивает секцию интерфейса для работы с shared memory.
+ */
 void MainWindow::initializeSharedMemoryUi()
 {
     ui->read_lineEdit->setReadOnly(true);
     setSharedMemoryControlsReady(false);
 }
 
+/**
+ * @brief Переключает доступность элементов управления shared memory.
+ */
 void MainWindow::setSharedMemoryControlsReady(const bool ready)
 {
     ui->connection_button->setEnabled(!ready);
@@ -103,6 +139,9 @@ void MainWindow::setSharedMemoryControlsReady(const bool ready)
     ui->read_button->setEnabled(ready);
 }
 
+/**
+ * @brief Подключается к существующему сегменту разделяемой памяти.
+ */
 void MainWindow::on_connection_button_clicked()
 {
     QString errorMessage;
@@ -124,6 +163,9 @@ void MainWindow::on_connection_button_clicked()
     );
 }
 
+/**
+ * @brief Отключается от сегмента разделяемой памяти.
+ */
 void MainWindow::on_disconnection_button_clicked()
 {
     QString errorMessage;
@@ -148,6 +190,9 @@ void MainWindow::on_disconnection_button_clicked()
     );
 }
 
+/**
+ * @brief Записывает строку в разделяемую память.
+ */
 void MainWindow::on_write_button_clicked()
 {
     QString errorMessage;
@@ -167,6 +212,9 @@ void MainWindow::on_write_button_clicked()
     );
 }
 
+/**
+ * @brief Считывает строку из разделяемой памяти и отображает её в интерфейсе.
+ */
 void MainWindow::on_read_button_clicked()
 {
     QString errorMessage;
