@@ -22,6 +22,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    if (process_->state() != QProcess::NotRunning) {
+        process_->kill();
+        process_->waitForFinished(1000);
+    }
+
     delete ui;
 }
 
@@ -457,6 +462,9 @@ void MainWindow::on_memoryShutdown_button_clicked()
     }
 
     setSharedMemoryControlsReady(false);
+
+    ui->record_lineEdit->clear();
+    ui->read_lineEdit->clear();
 
     statusBar()->showMessage(
         QStringLiteral("Отключение от разделяемой памяти выполнено"),

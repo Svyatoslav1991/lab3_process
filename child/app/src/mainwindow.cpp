@@ -31,14 +31,6 @@ void MainWindow::initializeUi()
     ui->dataReception_lineEdit->setReadOnly(true);
     ui->dataReception_button->setEnabled(true);
 
-    // Эти элементы задействуем позже, на этапе shared memory.
-    ui->connection_button->setEnabled(false);
-    ui->disconnection_button->setEnabled(false);
-    ui->read_button->setEnabled(false);
-    ui->write_button->setEnabled(false);
-    ui->read_lineEdit->setEnabled(false);
-    ui->write_lineEdit->setEnabled(false);
-
     statusBar()->showMessage(QStringLiteral("Child готов"), 3000);
 
     initializeSharedMemoryUi();
@@ -146,6 +138,9 @@ void MainWindow::on_disconnection_button_clicked()
     }
 
     setSharedMemoryControlsReady(false);
+
+    ui->write_lineEdit->clear();
+    ui->read_lineEdit->clear();
 
     statusBar()->showMessage(
         QStringLiteral("Отключение от разделяемой памяти выполнено"),
