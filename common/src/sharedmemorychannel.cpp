@@ -6,6 +6,16 @@
 #include <algorithm>
 #include <cstring>
 
+/**
+ * @file sharedmemorychannel.cpp
+ * @brief Реализация класса канала обмена через QSharedMemory.
+ *
+ * @details
+ * Файл содержит реализацию высокоуровневой обёртки над QSharedMemory,
+ * предназначенной для безопасной записи и чтения строковых данных
+ * через общий сегмент памяти.
+ */
+
 QString SharedMemoryChannel::defaultKey()
 {
     return QStringLiteral("lab3_qt20_shared_memory");
@@ -17,12 +27,18 @@ SharedMemoryChannel::SharedMemoryChannel(const QString& key, const int segmentSi
 {
 }
 
+/**
+ * @brief Конструирует объект блокировки и пытается захватить lock().
+ */
 SharedMemoryChannel::LockGuard::LockGuard(QSharedMemory& memory)
     : memory_(memory)
     , locked_(memory_.lock())
 {
 }
 
+/**
+ * @brief Освобождает блокировку сегмента памяти при уничтожении объекта.
+ */
 SharedMemoryChannel::LockGuard::~LockGuard()
 {
     if (locked_) {
@@ -44,6 +60,14 @@ bool SharedMemoryChannel::setError(QString* errorMessage, const QString& text) c
     return false;
 }
 
+/**
+ * @brief Создаёт сегмент памяти и инициализирует его служебным заголовком.
+ *
+ * @details
+ * Если сегмент уже существует, выполняется попытка подключения к нему.
+ * При успешном создании весь сегмент сначала заполняется нулями, затем
+ * в начало памяти записывается корректный заголовок протокола.
+ */
 bool SharedMemoryChannel::create(QString* errorMessage)
 {
     if (memory_.isAttached()) {
@@ -132,6 +156,13 @@ int SharedMemoryChannel::segmentSize() const
     return segmentSize_;
 }
 
+/**
+ * @brief Сериализует строку в бинарный буфер с помощью QDataStream.
+ *
+ * @details
+ * Используется QBuffer поверх QByteArray, чтобы получить готовую
+ * последовательность байт для последующей записи в разделяемую память.
+ */
 QByteArray SharedMemoryChannel::serializeString(const QString& value, QString* errorMessage) const
 {
     QByteArray payload;
@@ -154,6 +185,13 @@ QByteArray SharedMemoryChannel::serializeString(const QString& value, QString* e
     return payload;
 }
 
+/**
+ * @brief Восстанавливает строку из бинарной полезной нагрузки.
+ *
+ * @details
+ * Метод выполняет обратную операцию по отношению к serializeString():
+ * создаёт поток чтения поверх QByteArray и извлекает из него QString.
+ */
 bool SharedMemoryChannel::deserializeString(const QByteArray& payload,
                                             QString* value,
                                             QString* errorMessage) const
@@ -182,6 +220,17 @@ bool SharedMemoryChannel::deserializeString(const QByteArray& payload,
     return true;
 }
 
+/**
+ * @brief Записывает строку в сегмент памяти согласно внутреннему протоколу.
+ *
+ * @details
+ * В сегмент последовательно записываются:
+ * 1. Header;
+ * 2. сериализованная строка.
+ *
+ * Перед записью весь сегмент очищается нулями, чтобы исключить чтение
+ * "хвостов" от предыдущих данных.
+ */
 bool SharedMemoryChannel::writeString(const QString& value, QString* errorMessage)
 {
     if (!memory_.isAttached()) {
@@ -234,6 +283,17 @@ bool SharedMemoryChannel::writeString(const QString& value, QString* errorMessag
     return false;
 }
 
+/**
+ * @brief Считывает строку из сегмента памяти с проверкой заголовка.
+ *
+ * @details
+ * Метод проверяет:
+ * - сигнатуру формата;
+ * - версию протокола;
+ * - корректность размера полезной нагрузки.
+ *
+ * После успешных проверок данные извлекаются и десериализуются в QString.
+ */
 bool SharedMemoryChannel::readString(QString* value, QString* errorMessage)
 {
     if (!memory_.isAttached()) {
