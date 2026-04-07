@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "sharedmemorychannel.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -11,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , process_(new QProcess(this))
+    , sharedMemory_(std::make_unique<SharedMemoryChannel>())
 {
     ui->setupUi(this);
 
@@ -34,6 +36,8 @@ void MainWindow::initializeUi()
     clearExitInfo();
 
     statusBar()->showMessage(QStringLiteral("Готово к запуску процессов"), 3000);
+
+    initializeSharedMemoryUi();
 }
 
 void MainWindow::connectProcessSignals()
@@ -358,4 +362,104 @@ void MainWindow::onChildError(const QProcess::ProcessError error)
 void MainWindow::onChildStandardOutputReady()
 {
     handleStdoutChunk(process_->readAllStandardOutput());
+}
+
+void MainWindow::initializeSharedMemoryUi()
+{
+    ui->read_lineEdit->setReadOnly(true);
+    setSharedMemoryControlsReady(false);
+}
+
+void MainWindow::setSharedMemoryControlsReady(const bool ready)
+{
+    ui->creationMemory_button->setEnabled(!ready);
+
+    ui->record_button->setEnabled(ready);
+    ui->record_lineEdit->setEnabled(ready);
+
+    ui->read_button->setEnabled(ready);
+    ui->memoryShutdown_button->setEnabled(ready);
+}
+
+void MainWindow::on_creationMemory_button_clicked()
+{
+    QString errorMessage;
+
+    if (!sharedMemory_->create(&errorMessage)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Shared memory"),
+            errorMessage
+        );
+        return;
+    }
+
+    setSharedMemoryControlsReady(true);
+
+    statusBar()->showMessage(
+        QStringLiteral("Сегмент разделяемой памяти создан/подключён"),
+        3000
+    );
+}
+
+void MainWindow::on_record_button_clicked()
+{
+    QString errorMessage;
+
+    if (!sharedMemory_->writeString(ui->record_lineEdit->text(), &errorMessage)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Shared memory"),
+            errorMessage
+        );
+        return;
+    }
+
+    statusBar()->showMessage(
+        QStringLiteral("Данные записаны в разделяемую память"),
+        3000
+    );
+}
+
+void MainWindow::on_read_button_clicked()
+{
+    QString errorMessage;
+    QString value;
+
+    if (!sharedMemory_->readString(&value, &errorMessage)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Shared memory"),
+            errorMessage
+        );
+        return;
+    }
+
+    ui->read_lineEdit->setText(value);
+
+    statusBar()->showMessage(
+        QStringLiteral("Данные прочитаны из разделяемой памяти"),
+        3000
+    );
+}
+
+void MainWindow::on_memoryShutdown_button_clicked()
+{
+    QString errorMessage;
+
+    if (!sharedMemory_->detach(&errorMessage)) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("Shared memory"),
+            errorMessage
+        );
+        return;
+    }
+
+    setSharedMemoryControlsReady(false);
+
+    statusBar()->showMessage(
+        QStringLiteral("Отключение от разделяемой памяти выполнено"),
+        3000
+    );
 }

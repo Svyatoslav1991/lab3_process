@@ -27,6 +27,7 @@ target_include_directories(${PARENT_APP_TARGET}
 
 target_link_libraries(${PARENT_APP_TARGET}
     PRIVATE
+        lab3_common
         Qt${QT_VERSION_MAJOR}::Widgets
 )
 

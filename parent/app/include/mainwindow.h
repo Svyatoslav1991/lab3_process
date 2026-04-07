@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QProcess>
 #include <QStringList>
+#include <memory>
+
+class SharedMemoryChannel;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -36,6 +39,11 @@ private slots:
     void onChildError(QProcess::ProcessError error);
     void onChildStandardOutputReady();
 
+    void on_creationMemory_button_clicked();
+    void on_record_button_clicked();
+    void on_read_button_clicked();
+    void on_memoryShutdown_button_clicked();
+
 private:
     void initializeUi();
     void connectProcessSignals();
@@ -60,8 +68,12 @@ private:
     static QString exitStatusToString(QProcess::ExitStatus exitStatus);
     static QString processErrorToString(QProcess::ProcessError error);
 
+    void initializeSharedMemoryUi();
+    void setSharedMemoryControlsReady(bool ready);
+
 private:
     Ui::MainWindow *ui = nullptr;
     QProcess *process_ = nullptr;
     QByteArray childStdoutBuffer_;
+    std::unique_ptr<SharedMemoryChannel> sharedMemory_;
 };

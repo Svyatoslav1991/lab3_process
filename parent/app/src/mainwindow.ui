@@ -179,7 +179,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="executAndParams_button">
+        <widget class="QPushButton" name="executeAndParams_button">
          <property name="text">
           <string>Execute + Params</string>
          </property>
