@@ -300,7 +300,11 @@ void TestParentMainWindow::resolvedProgramPath_returnsAbsolutePathAsIs()
 {
     MainWindow window;
 
-    const QString absolutePath = QDir::toNativeSeparators(QStringLiteral("C:/temp/app.exe"));
+    const QString absolutePath =
+        QDir::cleanPath(QDir::temp().filePath(QStringLiteral("app.exe")));
+
+    QVERIFY(QFileInfo(absolutePath).isAbsolute());
+
     lineEdit(window, "name_lineEdit")->setText(absolutePath);
 
     QCOMPARE(window.resolvedProgramPath(), QFileInfo(absolutePath).absoluteFilePath());
