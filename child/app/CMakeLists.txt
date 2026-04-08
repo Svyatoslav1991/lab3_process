@@ -25,10 +25,10 @@ target_include_directories(${CHILD_APP_TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(${CHILD_APP_TARGET}
-    PRIVATE
-        lab3_common
-        Qt${QT_VERSION_MAJOR}::Widgets
+target_link_libraries(lab3_child PRIVATE
+    lab3_common
+    Qt5::Core
+    Qt5::Widgets
 )
 
 if(WIN32)
