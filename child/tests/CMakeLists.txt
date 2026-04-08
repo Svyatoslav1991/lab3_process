@@ -1,31 +1,24 @@
-set(CHILD_TEST_TARGET test_lab3_child)
-
-set(CHILD_TEST_SOURCES
-    # test_childwindow.cpp
+add_executable(test_child_mainwindow
+    test_mainwindow.cpp
+    ../app/src/mainwindow.cpp
+    ../app/include/mainwindow.h
+    ../app/src/mainwindow.ui
 )
 
-if(CHILD_TEST_SOURCES)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test Widgets)
+target_include_directories(test_child_mainwindow PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../app/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../common/app/include
+)
 
-    add_executable(${CHILD_TEST_TARGET})
+target_link_libraries(test_child_mainwindow PRIVATE
+    lab3_common
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Test
+)
 
-    target_sources(${CHILD_TEST_TARGET}
-        PRIVATE
-            ${CHILD_TEST_SOURCES}
-    )
-
-    target_include_directories(${CHILD_TEST_TARGET}
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/../app/include
-    )
-
-    target_link_libraries(${CHILD_TEST_TARGET}
-        PRIVATE
-            Qt${QT_VERSION_MAJOR}::Test
-            Qt${QT_VERSION_MAJOR}::Widgets
-    )
-
-    add_test(NAME ${CHILD_TEST_TARGET} COMMAND ${CHILD_TEST_TARGET})
-else()
-    message(STATUS "child/tests: тестовые файлы пока не добавлены, цель тестов не создается.")
+if(WIN32 AND MINGW AND QT_VERSION_MAJOR EQUAL 5)
+    target_link_libraries(test_child_mainwindow PRIVATE Qt5::WinMain)
 endif()
+
+add_test(NAME test_child_mainwindow COMMAND test_child_mainwindow)

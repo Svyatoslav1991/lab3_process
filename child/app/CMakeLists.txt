@@ -1,36 +1,17 @@
-set(CHILD_APP_HEADERS
-    include/mainwindow.h
-)
-
-set(CHILD_APP_SOURCES
+add_executable(lab3_child
     src/main.cpp
     src/mainwindow.cpp
-)
-
-set(CHILD_APP_FORMS
+    include/mainwindow.h
     src/mainwindow.ui
 )
 
-add_executable(${CHILD_APP_TARGET})
-
-target_sources(${CHILD_APP_TARGET}
-    PRIVATE
-        ${CHILD_APP_HEADERS}
-        ${CHILD_APP_SOURCES}
-        ${CHILD_APP_FORMS}
-)
-
-target_include_directories(${CHILD_APP_TARGET}
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+target_include_directories(lab3_child PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../common/app/include
 )
 
 target_link_libraries(lab3_child PRIVATE
     lab3_common
-    Qt5::Core
-    Qt5::Widgets
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Widgets
 )
-
-if(WIN32)
-    set_target_properties(${CHILD_APP_TARGET} PROPERTIES WIN32_EXECUTABLE YES)
-endif()
